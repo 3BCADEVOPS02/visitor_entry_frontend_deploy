@@ -13,29 +13,31 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
+          cache: 'npm'   # ✅ speed + security
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci      # ✅ safer than npm install
 
       - name: Build project
         run: npm run build
 
-      # ✅ FIX: Skip failing tests
-      - name: Run tests (ignore if none)
+      - name: Run tests (skip if none)
         run: npm test -- --passWithNoTests
 
-      # ✅ FIX: Upload ONLY build folder
+      # ✅ Upload ONLY build output (IMPORTANT)
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: react-build
           path: build/
+          if-no-files-found: error
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,6 +51,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: react-build
+          path: build   # ✅ ensures correct structure
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -57,10 +60,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_33EBA0BA0933471BA01BF1451D91741F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AC456833156F452CA9C6D26B0217CA6D }}
 
-      # ✅ FIX: Deploy ONLY build output
+      # ✅ Deploy ONLY build folder (CRITICAL FIX)
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'visitor-entry-frontend'
           slot-name: 'Production'
-          package: .
+          package: build
