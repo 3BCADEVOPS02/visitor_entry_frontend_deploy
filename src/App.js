@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 function App() {
@@ -38,12 +38,7 @@ function App() {
     throw lastError;
   };
 
-  // Load all visitors
-  useEffect(() => {
-    fetchVisitors();
-  }, []);
-
-  const fetchVisitors = () => {
+  const fetchVisitors = useCallback(() => {
     setLoading(true);
     setError(null);
 
@@ -61,7 +56,11 @@ function App() {
         setVisitors([]);
       })
       .finally(() => setLoading(false));
-  };
+  }, [API_URL_PRIMARY, API_URL_FALLBACK]);
+
+  useEffect(() => {
+    fetchVisitors();
+  }, [fetchVisitors]);
 
   // Handle input change
   const handleChange = (e) => {
