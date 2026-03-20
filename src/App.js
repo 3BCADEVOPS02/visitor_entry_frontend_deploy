@@ -15,7 +15,28 @@ function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://localhost:8083/api/visitors";
+  const API_URL_PRIMARY = "https://visitor-backend-ahfcfyctbfgmcpa6.southeastasia-01.azurewebsites.net/api/visitors";
+  const API_URL_FALLBACK = "http://localhost:8083/api/visitors";
+
+  const callApiWithFallback = async (method, path = "", body = null) => {
+    const urls = [API_URL_PRIMARY, API_URL_FALLBACK];
+    let lastError = null;
+
+    for (const baseUrl of urls) {
+      try {
+        return await axios({
+          method,
+          url: path ? `${baseUrl}${path}` : baseUrl,
+          data: body,
+        });
+      } catch (err) {
+        lastError = err;
+        console.warn(`API fallback attempt failed for ${baseUrl}:`, err.message || err);
+      }
+    }
+
+    throw lastError;
+  };
 
   // Load all visitors
   useEffect(() => {
@@ -25,17 +46,17 @@ function App() {
   const fetchVisitors = () => {
     setLoading(true);
     setError(null);
-    axios
-      .get(API_URL)
+
+    callApiWithFallback("get")
       .then((res) => {
         setVisitors(res.data);
         setError(null);
       })
       .catch((err) => {
         console.error("Error fetching visitors:", err);
-        const errorMsg = err.response?.status 
+        const errorMsg = err.response?.status
           ? `Server error (${err.response.status}): ${err.response.data?.message || 'Unknown error'}`
-          : "Could not connect to the server. Make sure the backend API is running on http://localhost:8083";
+          : `Could not connect to the backend. Tried primary: ${API_URL_PRIMARY} and fallback: ${API_URL_FALLBACK}`;
         setError(errorMsg);
         setVisitors([]);
       })
@@ -52,8 +73,7 @@ function App() {
     e.preventDefault();
     setError(null);
     if (editingId) {
-      axios
-        .put(`${API_URL}/${editingId}`, visitor)
+      callApiWithFallback("put", `/${editingId}`, visitor)
         .then(() => {
           fetchVisitors();
           setVisitor({ name: "", email: "", phone: "", purpose: "", checkInTime: "", checkOutTime: "" });
@@ -64,8 +84,7 @@ function App() {
           setError("Failed to update visitor. Please try again.");
         });
     } else {
-      axios
-        .post(API_URL, visitor)
+      callApiWithFallback("post", "", visitor)
         .then(() => {
           fetchVisitors();
           setVisitor({ name: "", email: "", phone: "", purpose: "", checkInTime: "", checkOutTime: "" });
@@ -92,8 +111,7 @@ function App() {
 
   // Delete visitor
   const handleDelete = (id) => {
-    axios
-      .delete(`${API_URL}/${id}`)
+    callApiWithFallback("delete", `/${id}`)
       .then(() => {
         setVisitors(visitors.filter((v) => v.id !== id));
         setError(null);
