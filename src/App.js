@@ -110,17 +110,23 @@ function App() {
 
   // Delete visitor
   const handleDelete = (id) => {
-    callApiWithFallback("delete", `/${id}`)
-      .then(() => {
-        setVisitors(visitors.filter((v) => v.id !== id));
-        setError(null);
-      })
-      .catch((err) => {
-        console.error("Error deleting visitor:", err);
-        setError("Failed to delete visitor. Please try again.");
-      });
-  };
+  const password = prompt("Enter password to delete:");
 
+  if (password !== "2006") {
+    alert("Incorrect password. Delete not allowed.");
+    return;
+  }
+
+  callApiWithFallback("delete", `/${id}`)
+    .then(() => {
+      setVisitors(visitors.filter((v) => v.id !== id));
+      setError(null);
+    })
+    .catch((err) => {
+      console.error("Error deleting visitor:", err);
+      setError("Failed to delete visitor. Please try again.");
+    });
+};
   return (
     <div style={{ margin: "20px" }}>
       <h1>Visitor Entry System</h1>
