@@ -174,10 +174,10 @@ function App() {
           required
         />
         <input
-          name="to meet"
+          name="purpose"
           value={visitor.purpose}
           onChange={handleChange}
-          placeholder="to meet"
+          placeholder="Purpose"
           required
         />
         <input
@@ -207,7 +207,7 @@ function App() {
             <th>Name</th>
             <th>Email</th>
             <th>Phone</th>
-            <th>To meet</th>
+            <th>Purpose</th>
             <th>Check-in Time</th>
             <th>Check-out Time</th>
             <th>Actions</th>
