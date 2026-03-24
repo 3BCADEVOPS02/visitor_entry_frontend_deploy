@@ -8,6 +8,7 @@ function App() {
     email: "",
     phone: "",
     purpose: "",
+    toMeet: "",
     checkInTime: "",
     checkOutTime: "",
   });
@@ -15,7 +16,8 @@ function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL_PRIMARY = "https://visitor-backend-ahfcfyctbfgmcpa6.southeastasia-01.azurewebsites.net/api/visitors";
+  const API_URL_PRIMARY =
+    "https://visitor-backend-ahfcfyctbfgmcpa6.southeastasia-01.azurewebsites.net/api/visitors";
   const API_URL_FALLBACK = "http://localhost:8083/api/visitors";
 
   const callApiWithFallback = async (method, path = "", body = null) => {
@@ -31,7 +33,10 @@ function App() {
         });
       } catch (err) {
         lastError = err;
-        console.warn(`API fallback attempt failed for ${baseUrl}:`, err.message || err);
+        console.warn(
+          `API fallback attempt failed for ${baseUrl}:`,
+          err.message || err
+        );
       }
     }
 
@@ -50,13 +55,15 @@ function App() {
       .catch((err) => {
         console.error("Error fetching visitors:", err);
         const errorMsg = err.response?.status
-          ? `Server error (${err.response.status}): ${err.response.data?.message || 'Unknown error'}`
-          : `Could not connect to the backend. Tried primary: ${API_URL_PRIMARY} and fallback: ${API_URL_FALLBACK}`;
+          ? `Server error (${err.response.status}): ${
+              err.response.data?.message || "Unknown error"
+            }`
+          : `Could not connect to the backend. Tried primary and fallback.`;
         setError(errorMsg);
         setVisitors([]);
       })
       .finally(() => setLoading(false));
-  }, [API_URL_PRIMARY, API_URL_FALLBACK]);
+  }, []);
 
   useEffect(() => {
     fetchVisitors();
@@ -71,28 +78,39 @@ function App() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
+
     if (editingId) {
       callApiWithFallback("put", `/${editingId}`, visitor)
         .then(() => {
           fetchVisitors();
-          setVisitor({ name: "", email: "", phone: "", purpose: "", checkInTime: "", checkOutTime: "" });
-          setEditingId(null);
+          resetForm();
         })
-        .catch((err) => {
-          console.error("Error updating visitor:", err);
-          setError("Failed to update visitor. Please try again.");
+        .catch(() => {
+          setError("Failed to update visitor.");
         });
     } else {
       callApiWithFallback("post", "", visitor)
         .then(() => {
           fetchVisitors();
-          setVisitor({ name: "", email: "", phone: "", purpose: "", checkInTime: "", checkOutTime: "" });
+          resetForm();
         })
-        .catch((err) => {
-          console.error("Error adding visitor:", err);
-          setError("Failed to add visitor. Please try again.");
+        .catch(() => {
+          setError("Failed to add visitor.");
         });
     }
+  };
+
+  const resetForm = () => {
+    setVisitor({
+      name: "",
+      email: "",
+      phone: "",
+      purpose: "",
+      toMeet: "",
+      checkInTime: "",
+      checkOutTime: "",
+    });
+    setEditingId(null);
   };
 
   // Edit visitor
@@ -102,6 +120,7 @@ function App() {
       email: v.email,
       phone: v.phone,
       purpose: v.purpose,
+      toMeet: v.toMeet || "",
       checkInTime: v.checkInTime,
       checkOutTime: v.checkOutTime,
     });
@@ -110,90 +129,58 @@ function App() {
 
   // Delete visitor
   const handleDelete = (id) => {
+    const password = prompt("Enter password to delete:");
+
+    if (password !== "2006") {
+      alert("Incorrect password.");
+      return;
+    }
+
     callApiWithFallback("delete", `/${id}`)
       .then(() => {
         setVisitors(visitors.filter((v) => v.id !== id));
-        setError(null);
       })
-      .catch((err) => {
-        console.error("Error deleting visitor:", err);
-        setError("Failed to delete visitor. Please try again.");
+      .catch(() => {
+        setError("Failed to delete visitor.");
       });
+  };
+
+  // TO MEET button action
+  const handleToMeet = (v) => {
+    alert(`Visitor ${v.name} wants to meet ${v.toMeet}`);
   };
 
   return (
     <div style={{ margin: "20px" }}>
       <h1>Visitor Entry System</h1>
 
-      {/* Error Message */}
       {error && (
-        <div
-          style={{
-            backgroundColor: "#f8d7da",
-            color: "#721c24",
-            padding: "12px",
-            borderRadius: "4px",
-            marginBottom: "20px",
-            border: "1px solid #f5c6cb",
-          }}
-        >
+        <div style={{ color: "red", marginBottom: "10px" }}>
           ❌ {error}
         </div>
       )}
 
-      {/* Loading State */}
       {loading && <p>Loading visitors...</p>}
 
       {/* Form */}
       <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
-        <input
-          name="name"
-          value={visitor.name}
-          onChange={handleChange}
-          placeholder="Name"
-          required
-        />
-        <input
-          name="email"
-          value={visitor.email}
-          onChange={handleChange}
-          placeholder="Email"
-          required
-        />
-        <input
-          name="phone"
-          value={visitor.phone}
-          onChange={handleChange}
-          placeholder="Phone"
-          required
-        />
-        <input
-          name="purpose"
-          value={visitor.purpose}
-          onChange={handleChange}
-          placeholder="Purpose"
-          required
-        />
-        <input
-          name="checkInTime"
-          type="datetime-local"
-          value={visitor.checkInTime}
-          onChange={handleChange}
-          placeholder="Check-in Time"
-        />
-        <input
-          name="checkOutTime"
-          type="datetime-local"
-          value={visitor.checkOutTime}
-          onChange={handleChange}
-          placeholder="Check-out Time"
-        />
+        <input name="name" value={visitor.name} onChange={handleChange} placeholder="Name" required />
+        <input name="email" value={visitor.email} onChange={handleChange} placeholder="Email" required />
+        <input name="phone" value={visitor.phone} onChange={handleChange} placeholder="Phone" required />
+        <input name="purpose" value={visitor.purpose} onChange={handleChange} placeholder="Purpose" required />
+
+        {/* NEW FIELD */}
+        <input name="toMeet" value={visitor.toMeet} onChange={handleChange} placeholder="To Meet" required />
+
+        <input type="datetime-local" name="checkInTime" value={visitor.checkInTime} onChange={handleChange} />
+        <input type="datetime-local" name="checkOutTime" value={visitor.checkOutTime} onChange={handleChange} />
+
         <button type="submit">
           {editingId ? "Update Visitor" : "Add Visitor"}
         </button>
       </form>
 
-      {/* Visitor List */}
+      {/* Table */}
       <h2>Visitor List</h2>
       <table border="1" cellPadding="10">
         <thead>
@@ -202,11 +189,13 @@ function App() {
             <th>Email</th>
             <th>Phone</th>
             <th>Purpose</th>
-            <th>Check-in Time</th>
-            <th>Check-out Time</th>
+            <th>To Meet</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
             <th>Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {visitors.map((v) => (
             <tr key={v.id}>
@@ -214,11 +203,18 @@ function App() {
               <td>{v.email}</td>
               <td>{v.phone}</td>
               <td>{v.purpose}</td>
-              <td>{v.checkInTime ? new Date(v.checkInTime).toLocaleString() : '-'}</td>
-              <td>{v.checkOutTime ? new Date(v.checkOutTime).toLocaleString() : '-'}</td>
+              <td>{v.toMeet || "-"}</td>
+              <td>{v.checkInTime ? new Date(v.checkInTime).toLocaleString() : "-"}</td>
+              <td>{v.checkOutTime ? new Date(v.checkOutTime).toLocaleString() : "-"}</td>
+
               <td>
                 <button onClick={() => handleEdit(v)}>Edit</button>
                 <button onClick={() => handleDelete(v.id)}>Delete</button>
+
+                {/* TO MEET BUTTON */}
+                <button onClick={() => handleToMeet(v)}>
+                  TO MEET
+                </button>
               </td>
             </tr>
           ))}
